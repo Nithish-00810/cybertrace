@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CyberTrace">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<title>CyberTrace AI Agent</title>
+<style>
+:root{--bg:#07111f;--panel:#0c1b33;--card:#10233f;--line:#1d3558;--blue:#2f7bff;--cyan:#22d3ee;--text:#e6f0ff;--muted:#8aa4cc;
+--CRITICAL:#ff4d6d;--HIGH:#ff8a3d;--MEDIUM:#f5c542;--LOW:#34d399;--INFO:#8aa4cc}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+.app{display:grid;grid-template-columns:250px 1fr 310px;height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.right{background:var(--panel);border-left:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+main{display:flex;flex-direction:column;min-width:0}
+.brand{font-weight:700;letter-spacing:.3px;font-size:16px}.brand span{color:var(--cyan)}
+.tag{font-size:11px;color:var(--muted)}
+button{background:linear-gradient(135deg,var(--blue),#1f5fd6);color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:600;transition:.2s;font:inherit;font-weight:600}
+button:hover{filter:brightness(1.1)}
+button.ghost{background:var(--card);border:1px solid var(--line);color:var(--text)}
+input,textarea,select{background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 10px;font:inherit;width:100%}
+textarea{resize:vertical}
+.inv{padding:9px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:6px}
+.inv:hover,.inv.active{background:var(--card);border-color:var(--line)}
+.inv small,.muted{color:var(--muted)}
+header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h2{margin:0;font-size:16px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+#chat{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+.bubble{max-width:86%;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);line-height:1.5;word-wrap:break-word;white-space:normal}
+.bubble.user{align-self:flex-end;background:#15396e;border-color:#245194;white-space:pre-wrap}
+.bubble .label{font-size:11px;color:var(--cyan);margin-bottom:4px;font-weight:600}
+.steps{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;font-size:12px;color:var(--muted)}
+form.composer{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+form.composer textarea{min-height:44px;max-height:160px}
+form.composer button{align-self:flex-end}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.card h4{margin:0 0 8px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.sev{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;border:1px solid currentColor}
+.sev.big{font-size:14px;padding:4px 12px}
+.CRITICAL{color:var(--CRITICAL)}.HIGH{color:var(--HIGH)}.MEDIUM{color:var(--MEDIUM)}.LOW{color:var(--LOW)}.INFO{color:var(--INFO)}
+.bar{height:8px;background:#0a1628;border-radius:99px;overflow:hidden;margin:8px 0}
+.bar div{height:100%;background:linear-gradient(90deg,var(--cyan),var(--blue));transition:width .6s}
+ul{margin:0;padding-left:18px}li{margin-bottom:6px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--muted)}
+.dot.success{background:var(--LOW)}.dot.error,.dot.blocked{background:var(--CRITICAL)}
+.finding{border-left:3px solid var(--line);padding:4px 0 6px 10px;margin-bottom:10px}
+.finding p{margin:4px 0;color:#c9d9f5;font-size:13px}
+.finding small{color:var(--muted);font-size:11px}
+.tagk{font-size:10px;padding:1px 6px;border-radius:4px;background:#1b3a6b;color:var(--cyan);margin-right:6px;text-transform:uppercase}
+.tagk.heuristic{color:#f5c542;background:#3d3517}.tagk.intel{color:#ff8a3d;background:#3d2415}
+.tl{border-left:2px solid var(--line);padding:0 0 8px 10px;margin-left:4px;font-size:12px}
+.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:p 1s infinite}
+@keyframes p{50%{opacity:.2}}
+.mode{font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+#auth{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(3,8,18,.85);z-index:9}
+#auth form{width:340px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:10px}
+.err{color:var(--CRITICAL);min-height:18px;font-size:12px}
+a{color:var(--cyan)}
+#auth{z-index:30}
+.menubtn,.infobtn{display:none}
+#scrim{display:none}
+#scrim.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:15}
+@media(max-width:1100px){.app{grid-template-columns:210px 1fr}.right{display:none}}
+@media(max-width:760px){
+  .app{grid-template-columns:1fr;height:100vh;height:100dvh}
+  aside{position:fixed;top:0;bottom:0;left:0;width:86%;max-width:320px;z-index:20;transform:translateX(-105%);
+        transition:transform .25s ease;padding-top:calc(16px + env(safe-area-inset-top));padding-left:calc(16px + env(safe-area-inset-left))}
+  aside.open{transform:none;box-shadow:8px 0 30px rgba(0,0,0,.5)}
+  .right{display:flex;position:fixed;left:0;right:0;bottom:0;top:auto;max-height:75vh;max-height:75dvh;z-index:20;
+         border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0;
+         transform:translateY(105%);transition:transform .25s ease;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .right.open{transform:none;box-shadow:0 -8px 30px rgba(0,0,0,.5)}
+  .menubtn,.infobtn{display:inline-block;padding:10px 12px;min-height:40px}
+  header{padding:calc(10px + env(safe-area-inset-top)) 12px 10px;gap:8px}
+  header h2{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #invId,.mode{display:none}
+  .btns{margin-left:0;width:100%}
+  .btns button{flex:1;padding:10px 6px;font-size:13px;min-height:40px}
+  #chat{padding:12px}
+  .bubble{max-width:94%}
+  form.composer{padding:8px 10px;padding-bottom:calc(8px + env(safe-area-inset-bottom));gap:6px}
+  form.composer button{min-height:44px;padding:0 16px}
+  input,textarea,select{font-size:16px}  /* stops iOS zooming on focus */
+  .inv{padding:12px}
+}
+</style>
+</head>
+<body>
+
+<div id="auth">
+  <form onsubmit="submitAuth(event)">
+    <div class="brand">Cyber<span>Trace</span> AI Agent</div>
+    <div class="tag">Think Like an Analyst. Investigate Like an Expert. Defend Like an AI.</div>
+    <h3 id="authTitle" style="margin:6px 0">Sign in</h3>
+    <div id="nameRow" style="display:none"><input id="name" placeholder="Full name" autocomplete="name"></div>
+    <input id="email" type="email" placeholder="Email" required autocomplete="email">
+    <input id="password" type="password" placeholder="Password (min 8 characters)" required minlength="8" autocomplete="current-password">
+    <div class="err" id="authErr"></div>
+    <button id="authBtn">Sign in</button>
+    <a href="#" id="authSwitch" onclick="toggleAuth();return false" class="tag">No account? Register</a>
+  </form>
+</div>
+
+<div id="scrim" onclick="closePanels()"></div>
+<div class="app">
+  <aside>
+    <div>
+      <div class="brand">Cyber<span>Trace</span></div>
+      <div class="tag">AI Agent · Command Centre</div>
+    </div>
+    <button onclick="newInv()">+ New investigation</button>
+    <div class="tag" style="margin-top:6px">INVESTIGATIONS</div>
+    <div id="invList"></div>
+    <div style="margin-top:auto">
+      <div class="tag" id="who"></div>
+      <button class="ghost" onclick="logout()" style="margin-top:6px;width:100%">Sign out</button>
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <button class="ghost menubtn" onclick="togglePanel('aside')" aria-label="Investigations">☰</button>
+      <div>
+        <h2 id="invTitle">Welcome</h2>
+        <div class="tag" id="invId"></div>
+      </div>
+      <span class="mode" id="mode">checking…</span>
+      <select id="status" onchange="setStatus(this.value)" style="width:auto">
+        <option value="open">Open</option>
+        <option value="investigating">Investigating</option>
+        <option value="contained">Contained</option>
+        <option value="resolved">Resolved</option>
+        <option value="closed">Closed</option>
+      </select>
+      <div class="btns">
+        <button class="ghost infobtn" onclick="togglePanel('right')">Details</button>
+        <button class="ghost" onclick="$('#file').click()">Upload evidence</button>
+        <button class="ghost" onclick="loadDemo()">Load demo log</button>
+        <button onclick="genReport()">Generate report</button>
+        <input type="file" id="file" hidden accept=".txt,.log,.csv,.json,.eml,.pdf" onchange="upload(this)">
+      </div>
+    </header>
+
+    <div id="chat"></div>
+
+    <form class="composer" id="composer" onsubmit="send(event)">
+      <textarea id="msg" rows="2" placeholder="Paste a log, email, URL or IP, or ask a question…"></textarea>
+      <button type="submit">Send</button>
+    </form>
+  </main>
+
+  <section class="right">
+    <div class="card">
+      <h4>Threat severity</h4>
+      <span id="sev" class="sev big LOW">—</span>
+      <div class="bar"><div id="scoreBar" style="width:0%"></div></div>
+      <div class="tag">Risk score <b id="score">0</b>/100 · Confidence <b id="conf">—</b></div>
+      <div class="tag" style="margin-top:6px">Score reflects rule matches and intelligence, not proof of compromise.</div>
+    </div>
+    <div class="card"><h4>Evidence (<span id="evCount">0</span>)</h4><ul id="evList"></ul></div>
+    <div class="card"><h4>Agent activity</h4><ul id="tools"></ul></div>
+    <div class="card"><h4>Findings</h4><div id="findings"></div></div>
+    <div class="card"><h4>Recommendations</h4><ul id="recs"></ul></div>
+    <div class="card"><h4>Timeline</h4><div id="timeline"></div></div>
+    <div class="card">
+      <h4>Analyst notes</h4>
+      <div id="notes"></div>
+      <textarea id="noteText" rows="2" placeholder="Add a note…"></textarea>
+      <button class="ghost" style="margin-top:6px;width:100%" onclick="addNote()">Save note</button>
+    </div>
+    <div class="card"><h4>Reports</h4><ul id="reports"></ul></div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+// If the page was opened straight from disk (file://), relative /api calls cannot resolve.
+// Point at the local backend in that case. When served by the backend, same-origin is used.
+const API_BASE = location.protocol === "file:" ? "http://localhost:8000" : "";
+let token = localStorage.getItem("ct_token"), me = null, currentId = null, authMode = "login";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const when = t => new Date(t * 1000).toLocaleString();
+
+// SAMPLE DATA: clearly labelled, synthetic, uses RFC 5737 documentation addresses.
+const DEMO_LOG = "[SAMPLE DATA - NOT LIVE INTELLIGENCE]\n" +
+  ["admin","root","user1","backup","guest","oracle","deploy","test","admin","root","jenkins","ubuntu"]
+    .map((u, i) => `2026-11-20T02:${String(13 + Math.floor(i / 3)).padStart(2, "0")}:${String(i * 4 % 60).padStart(2, "0")} sshd[2231]: Failed password for ${u} from 198.51.100.23 port ${52100 + i} ssh2`)
+    .join("\n") +
+  "\n2026-11-20T02:19:40 sshd[2231]: Accepted password for admin from 198.51.100.23 port 52199 ssh2";
+
+async function api(path, {method = "GET", body, form} = {}) {
+  const h = {};
+  if (token) h.Authorization = "Bearer " + token;
+  let payload;
+  if (form) payload = form;
+  else if (body !== undefined) { h["Content-Type"] = "application/json"; payload = JSON.stringify(body); }
+  let r;
+  try {
+    r = await fetch(API_BASE + path, {method, headers: h, body: payload});
+  } catch (e) {
+    throw new Error(
+      `Cannot reach the CyberTrace server at ${API_BASE || location.origin}. ` +
+      `Check that it is running (uvicorn main:app --port 8000) and open the app at http://localhost:8000, not as a local file. ` +
+      `(${e.message})`);
+  }
+  if (r.status === 401 && token) { logout(); throw new Error("Session expired"); }
+  if (!r.ok) {
+    let m = "Request failed";
+    try { const j = await r.json(); m = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail); } catch {}
+    throw new Error(m);
+  }
+  const ct = r.headers.get("content-type") || "";
+  if (ct.includes("pdf")) return r.blob();
+  return ct.includes("json") ? r.json() : r.text();
+}
+
+function toggleAuth() {
+  authMode = authMode === "login" ? "register" : "login";
+  $("#authTitle").textContent = authMode === "login" ? "Sign in" : "Create account";
+  $("#authBtn").textContent = authMode === "login" ? "Sign in" : "Create account";
+  $("#nameRow").style.display = authMode === "register" ? "block" : "none";
+  $("#authSwitch").textContent = authMode === "login" ? "No account? Register" : "Have an account? Sign in";
+  $("#authErr").textContent = "";
+}
+
+async function submitAuth(e) {
+  e.preventDefault();
+  $("#authErr").textContent = "";
+  const email = $("#email").value.trim(), password = $("#password").value;
+  try {
+    const d = authMode === "login"
+      ? await api("/api/auth/login", {method: "POST", body: {email, password}})
+      : await api("/api/auth/register", {method: "POST", body: {name: $("#name").value.trim(), email, password}});
+    token = d.token;
+    localStorage.setItem("ct_token", token);
+    await boot();
+  } catch (err) { $("#authErr").textContent = err.message; }
+}
+
+function togglePanel(which) {
+  const el = which === "aside" ? document.querySelector("aside") : document.querySelector("section.right");
+  const willOpen = !el.classList.contains("open");
+  closePanels();
+  if (willOpen) { el.classList.add("open"); $("#scrim").classList.add("show"); }
+}
+
+function closePanels() {
+  document.querySelectorAll("aside.open, section.right.open").forEach(e => e.classList.remove("open"));
+  $("#scrim").classList.remove("show");
+}
+
+function logout() {
+  token = null;
+  localStorage.removeItem("ct_token");
+  location.reload();
+}
+
+async function boot() {
+  api("/api/health").then(h => {
+    $("#mode").textContent = (h.llm === "gemini" ? "AI: Gemini" : "AI: offline rules") +
+      " · Intel: " + (h.threat_intel === "abuseipdb" ? "AbuseIPDB (live)" : "local heuristic");
+  }).catch(() => { $("#mode").textContent = "API unreachable"; });
+
+  if (!token) { $("#auth").style.display = "flex"; return; }
+  try { me = await api("/api/me"); }
+  catch { $("#auth").style.display = "flex"; return; }
+  $("#auth").style.display = "none";
+  $("#who").textContent = me.name + " · " + me.email;
+  const list = await loadList();
+  if (list.length) openInv(list[0].investigation_id);
+  else newInv();
+}
+
+async function loadList() {
+  const list = await api("/api/investigations");
+  $("#invList").innerHTML = list.map(i =>
+    `<div class="inv ${i.investigation_id === currentId ? "active" : ""}" onclick="openInv('${i.investigation_id}')">
+       <span class="sev ${esc(i.severity)}">${esc(i.severity)}</span>
+       <div>${esc(i.title)}</div><small>${when(i.created_at)}</small>
+     </div>`).join("") || '<p class="muted">No investigations yet.</p>';
+  return list;
+}
+
+async function newInv() {
+  const title = prompt("Investigation title:", "Suspicious activity review");
+  if (!title || !title.trim()) return;
+  const d = await api("/api/investigations", {method: "POST", body: {title: title.trim(), description: ""}});
+  await loadList();
+  openInv(d.investigation_id);
+}
+
+async function openInv(id) {
+  currentId = id;
+  const d = await api("/api/investigations/" + id);
+  render(d);
+  closePanels();
+  await loadList();
+}
+
+function bubble(m) {
+  const label = m.role === "user" ? "" : '<div class="label">CyberTrace</div>';
+  return `<div class="bubble ${esc(m.role)}">${label}${m.role === "user" ? esc(m.content) : esc(m.content).replace(/\n/g, "<br>")}</div>`;
+}
+
+function stepsHtml(steps) {
+  if (!steps || !steps.length) return "";
+  return '<div class="steps">' + steps.map(s =>
+    `<div><span class="dot ${esc(s.status)}"></span>${esc(s.tool)}: ${esc(s.summary)}${s.error ? ` <i>(${esc(s.error)})</i>` : ""}</div>`
+  ).join("") + "</div>";
+}
+
+function render(d) {
+  const inv = d.investigation, risk = inv.risk || {};
+  $("#invTitle").textContent = inv.title;
+  $("#invId").textContent = "ID " + inv.investigation_id;
+  $("#status").value = inv.status;
+
+  $("#chat").innerHTML = d.messages.length
+    ? d.messages.map(bubble).join("")
+    : `<div class="bubble assistant"><div class="label">CyberTrace</div>Welcome${me ? ", " + esc(me.name) : ""}. Paste a security log, an email with headers, a URL or an IP, or upload evidence. I'll plan the investigation, run the matching defensive tools, and separate what is observed from what is inferred.</div>`;
+  $("#chat").scrollTop = $("#chat").scrollHeight;
+
+  $("#sev").textContent = inv.severity;
+  $("#sev").className = "sev big " + inv.severity;
+  $("#scoreBar").style.width = (inv.risk_score || 0) + "%";
+  $("#score").textContent = inv.risk_score || 0;
+  $("#conf").textContent = risk.confidence != null ? Math.round(risk.confidence * 100) + "%" : "—";
+  $("#evCount").textContent = d.evidence.length;
+
+  $("#evList").innerHTML = d.evidence.map(e =>
+    `<li>${esc(e.filename)} <small class="muted">${esc(e.analysis_status)}</small></li>`).join("") || '<li class="muted">No evidence uploaded</li>';
+  $("#tools").innerHTML = d.executions.slice(-12).reverse().map(x =>
+    `<li><span class="dot ${esc(x.execution_status)}"></span>${esc(x.tool_name)} <small class="muted">${esc(x.execution_status)}</small></li>`).join("")
+    || '<li class="muted">None yet</li>';
+  $("#findings").innerHTML = d.findings.map(f =>
+    `<div class="finding">
+       <span class="tagk ${esc(f.kind)}">${esc(f.kind)}</span><b class="${esc(f.severity)}">${esc(f.severity)}</b> ${esc(f.category)}
+       <p>${esc(f.description)}</p>
+       <small>Confidence ${Math.round(f.confidence * 100)}% · ${esc(f.evidence_reference)}</small>
+     </div>`).join("") || '<p class="muted">No findings yet.</p>';
+  $("#recs").innerHTML = (risk.recommended_actions || []).map(a => `<li>${esc(a)}</li>`).join("")
+    || '<li class="muted">Run an analysis to get recommendations.</li>';
+  $("#timeline").innerHTML = (inv.timeline || []).slice(0, 15).map(t =>
+    `<div class="tl"><b>#${esc(t.step)}</b> <small class="muted">${esc(t.timestamp)}</small><div>${esc(t.event)}</div></div>`).join("")
+    || '<p class="muted">Timeline appears after log analysis.</p>';
+  $("#notes").innerHTML = d.notes.map(n => `<div class="finding"><p>${esc(n.body)}</p><small>${when(n.created_at)}</small></div>`).join("");
+  $("#reports").innerHTML = d.reports.map(r =>
+    `<li><a href="#" onclick="dl('${r.report_id}');return false">Report ${esc(r.report_id)}</a> <small class="muted">${when(r.created_at)}</small></li>`).join("")
+    || '<li class="muted">No reports yet</li>';
+}
+
+async function send(e) {
+  e.preventDefault();
+  const msg = $("#msg").value.trim();
+  if (!msg || !currentId) return;
+  $("#msg").value = "";
+  $("#chat").insertAdjacentHTML("beforeend", bubble({role: "user", content: msg}));
+  const pending = document.createElement("div");
+  pending.className = "bubble assistant";
+  pending.innerHTML = '<div class="label">CyberTrace</div><span class="pulse"></span> Planning investigation and running tools…';
+  $("#chat").appendChild(pending);
+  $("#chat").scrollTop = $("#chat").scrollHeight;
+  try {
+    const r = await api(`/api/investigations/${currentId}/chat`, {method: "POST", body: {message: msg}});
+    pending.innerHTML = `<div class="label">CyberTrace · ${esc(r.mode)}</div>${esc(r.reply).replace(/\n/g, "<br>")}${stepsHtml(r.steps)}`;
+  } catch (err) {
+    pending.innerHTML = `<div class="label" style="color:var(--CRITICAL)">Error</div>${esc(err.message)}`;
+  }
+  await openInv(currentId);
+}
+
+function loadDemo() {
+  $("#msg").value = DEMO_LOG;
+  $("#msg").focus();
+}
+
+async function upload(input) {
+  if (!currentId || !input.files[0]) return;
+  const f = new FormData();
+  f.append("file", input.files[0]);
+  try { await api(`/api/investigations/${currentId}/evidence`, {method: "POST", form: f}); }
+  catch (err) { alert(err.message); }
+  input.value = "";
+  openInv(currentId);
+}
+
+async function setStatus(v) {
+  try { await api(`/api/investigations/${currentId}`, {method: "PATCH", body: {status: v}}); }
+  catch (err) { alert(err.message); }
+  openInv(currentId);
+}
+
+async function addNote() {
+  const body = $("#noteText").value.trim();
+  if (!body || !currentId) return;
+  await api(`/api/investigations/${currentId}/notes`, {method: "POST", body: {body}});
+  $("#noteText").value = "";
+  openInv(currentId);
+}
+
+async function genReport() {
+  if (!currentId) return;
+  try {
+    const r = await api(`/api/investigations/${currentId}/report`, {method: "POST"});
+    await dl(r.report_id);
+  } catch (err) { alert(err.message); }
+  openInv(currentId);
+}
+
+async function dl(id) {
+  try {
+    const blob = await api(`/api/reports/${id}/download`);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `cybertrace_${id}.pdf`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch (err) { alert(err.message); }
+}
+
+$("#msg").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#composer").requestSubmit(); }
+});
+
+boot();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+</script>
+</body>
+</html>
